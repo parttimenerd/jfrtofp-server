@@ -1,0 +1,3 @@
+[submodule "firefox-profiler"]
+	path = firefox-profiler
+	url = https://github.com/parttimenerd/firefox-profiler.git
