@@ -38,7 +38,7 @@ class Main : Runnable {
                 port = findNewPort()
             }
         }
-        Server(file, port, config = config)
+        Server(file, port, config = config).run()
     }
 }
 

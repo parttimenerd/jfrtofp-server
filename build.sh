@@ -15,7 +15,7 @@ yarn --version || (echo "Yarn is not installed, trying to install it" && npm ins
 echo "Pull the latest firefox-profiler version"
 (
   cd firefox-profiler
-  (git fetch origin main && git reset --hard main) > /dev/null || true
+  (git fetch origin main && git reset --hard origin/main) > /dev/null || true
 )
     echo "pwdpwdpwd"
     pwd

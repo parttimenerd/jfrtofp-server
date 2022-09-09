@@ -71,6 +71,7 @@ dependencies {
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.21.0")
     implementation("info.picocli:picocli:4.6.3")
     implementation("io.javalin:javalin:4.6.4")
+    implementation("org.slf4j:slf4j-simple:1.8.0-beta4")
     implementation("com.github.parttimenerd:jfrtofp:main-SNAPSHOT") {
         this.isChanging = true
     }
