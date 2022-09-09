@@ -1,5 +1,6 @@
 # jfrtofp
 [![Maven Package](https://jitpack.io/v/parttimenerd/jfrtofp-server.svg)](https://jitpack.io/#parttimenerd/jfrtofp-server)
+[![Build](https://github.com/parttimenerd/jfrtofp-server/actions/workflows/push.yml/badge.svg)](https://github.com/parttimenerd/jfrtofp-server/actions/workflows/push.yml)
 
 Bundle of the [JFR to FirefoxProfiler converter](https://github.com/parttimenerd/jfrtofp-server) 
 with a custom [Firefox Profiler](https://profiler.firefox.com) for JDK 11+.
