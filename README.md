@@ -1,4 +1,4 @@
-# jfrtofp
+# jfrtofp-server
 [![Maven Package](https://jitpack.io/v/parttimenerd/jfrtofp-server.svg)](https://jitpack.io/#parttimenerd/jfrtofp-server)
 [![Build](https://github.com/parttimenerd/jfrtofp-server/actions/workflows/push.yml/badge.svg)](https://github.com/parttimenerd/jfrtofp-server/actions/workflows/push.yml)
 

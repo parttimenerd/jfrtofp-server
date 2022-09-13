@@ -25,6 +25,6 @@ echo "Build the profiler"
 echo "Copy the profiler to the src/main/resources/fp folder"
 rm -rf src/main/resources/fp
 mkdir -p src/main/resources/fp
-cp -r firefox-profiler/dist src/main/resources/fp
+cp -r firefox-profiler/dist/* src/main/resources/fp
 echo "gradle assemble for good measure"
 ./gradlew assemble

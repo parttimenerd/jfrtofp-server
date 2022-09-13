@@ -33,7 +33,7 @@ class Server(
 ) {
 
     val serverPort: Int = port ?: findNewPort()
-    val jfrFileFolder = jfrFile.parent
+    val jfrFileFolder = jfrFile.toAbsolutePath().parent
     val jfrFileName = jfrFile.fileName.toString()
     val jfrFileNameWithoutExtension = jfrFileName.substringBeforeLast('.')
 
@@ -59,7 +59,7 @@ class Server(
             config.addSinglePageRoot("/", "/fp/index.html")
         }.before { ctx -> ctx.res.setHeader(ACCESS_CONTROL_ALLOW_ORIGIN, "localhost:$serverPort localhost:$restPort") }
             .start(serverPort)
-        app.get("/{name}.json.gz") { ctx ->
+        app.get("/files/{name}.json.gz") { ctx ->
             val requestedJfrFile = jfrFileFolder.resolve(ctx.pathParam("name") + ".jfr")
             if (Files.notExists(requestedJfrFile)) {
                 ctx.redirect("https://http.cat/404")
@@ -72,7 +72,7 @@ class Server(
             ctx.res.setHeader(ACCESS_CONTROL_ALLOW_ORIGIN, "*")
         }
         app.get("/default") { ctx ->
-            val url = "http://localhost:$restPort/$jfrFileNameWithoutExtension.json.gz"
+            val url = "http://localhost:$restPort/files/$jfrFileNameWithoutExtension.json.gz"
             val encodedName = URLEncoder.encode(url, Charset.defaultCharset())
             println("redirecting to http://localhost:$serverPort/from-url/$encodedName")
             ctx.redirect("http://localhost:$serverPort/from-url/$encodedName")

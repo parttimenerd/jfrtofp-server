@@ -1,5 +1,6 @@
 package me.bechberger.jfrtofp.server
 
+import me.bechberger.jfrtofp.ConfigMixin
 import me.bechberger.jfrtofp.server.Server.Companion.findNewPort
 import me.bechberger.jfrtofp.server.Server.Companion.isPortUsable
 import picocli.CommandLine
@@ -30,7 +31,7 @@ class Main : Runnable {
     var port: Int? = null
 
     override fun run() {
-        val config = me.bechberger.jfrtofp.ConfigMixin.parseConfig(config ?: "")
+        val config = ConfigMixin.parseConfig(config ?: "")
         if (port == null) {
             if (isPortUsable(DEFAULT_PORT)) {
                 port = DEFAULT_PORT

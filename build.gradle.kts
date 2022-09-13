@@ -8,6 +8,13 @@ inner class ProjectInfo {
     val scm = "git@github.com:parttimenerd/$name.git"
 }
 
+fun properties(key: String) = project.findProperty(key).toString()
+
+configurations.all {
+    resolutionStrategy.cacheDynamicVersionsFor(0, "hours")
+    resolutionStrategy.cacheChangingModulesFor(0, "hours")
+}
+
 repositories {
     // Use Maven Central for resolving dependencies.
     mavenCentral()
@@ -26,7 +33,11 @@ plugins {
 
     id("org.jlleitschuh.gradle.ktlint") version "11.0.0"
 
-    `maven-publish`
+    id("maven-publish")
+
+    id("java-library")
+    id("signing")
+    id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
 
     // Apply the application plugin to add support for building a CLI application in Java.
     application
@@ -52,6 +63,11 @@ tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
 }
 tasks.withType<io.gitlab.arturbosch.detekt.DetektCreateBaselineTask>().configureEach {
     jvmTarget = "1.8"
+}
+
+java {
+    withJavadocJar()
+    withSourcesJar()
 }
 
 dependencies {
@@ -96,6 +112,53 @@ tasks.register<Copy>("copyHooks") {
 }
 
 tasks.findByName("build")?.dependsOn(tasks.findByName("copyHooks"))
+
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava") {
+            from(components["java"])
+            pom {
+                name.set("jfrtofp-server")
+                packaging = "jar"
+                description.set(project.description)
+                inceptionYear.set("2022")
+                url.set("https://github.com/parttimenerd/jfrtofp-server")
+                licenses {
+                    license {
+                        name.set("MIT License")
+                        url.set("https://opensource.org/licenses/MIT")
+                    }
+                }
+                developers {
+                    developer {
+                        id.set("parttimenerd")
+                        name.set("Johannes Bechberger")
+                        email.set("me@mostlynerdless.de")
+                    }
+                }
+                scm {
+                    connection.set("scm:git:https://github.com/parttimenerd/jfrtofp-server")
+                    developerConnection.set("scm:git:https://github.com/parttimenerd/jfrtofp-server")
+                    url.set("https://github.com/parttimenerd/jfrtofp-server")
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            name = "Sonatype"
+            url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+            credentials {
+                username = properties("sonatypeUsername")
+                password = properties("sonatypePassword")
+            }
+        }
+    }
+}
+
+signing {
+    sign(publishing.publications["mavenJava"])
+}
 
 repositories {
     maven {
