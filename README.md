@@ -25,18 +25,17 @@ Requires NodeJS (see Firefox Profiler build instructions) to be installed.
 ```
 
 ## Usage as a Library
-```xml
-<dependency>
-    <groupId>com.github.parttimenerd</groupId>
-    <artifactId>jfrtofp-server</artifactId>
-    <version>main-SNAPSHOT</version>
-</dependency>
-```
-or
 ```groovy
-implementation 'com.github.parttimenerd:jfrtofp-server:main-SNAPSHOT'
+dependencies {
+    implementation 'com.github.parttimenerd:jfrtofp-server:main-SNAPSHOT'
+}
+
+repositories {
+    maven {
+        url = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+    }
+}
 ```
-from [JitPack](https://jitpack.io/#parttimenerd/jfrtofp-server).
 
 ## License
 MIT

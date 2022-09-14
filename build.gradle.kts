@@ -16,7 +16,9 @@ configurations.all {
 }
 
 repositories {
-    // Use Maven Central for resolving dependencies.
+    maven {
+        url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+    }
     mavenCentral()
     gradlePluginPortal()
 }
@@ -29,8 +31,6 @@ plugins {
     id("com.github.johnrengelman.shadow") version "7.1.2"
 
     id("io.gitlab.arturbosch.detekt") version "1.21.0"
-    pmd
-
     id("org.jlleitschuh.gradle.ktlint") version "11.0.0"
 
     id("maven-publish")
@@ -43,13 +43,6 @@ plugins {
     application
 }
 
-pmd {
-    isConsoleOutput = true
-    toolVersion = "6.21.0"
-    rulesMinimumPriority.set(5)
-    ruleSets = listOf("category/java/errorprone.xml", "category/java/bestpractices.xml")
-}
-
 apply { plugin("com.github.johnrengelman.shadow") }
 
 detekt {
@@ -58,16 +51,12 @@ detekt {
     autoCorrect = true
 }
 
-tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
-    jvmTarget = "1.8"
-}
-tasks.withType<io.gitlab.arturbosch.detekt.DetektCreateBaselineTask>().configureEach {
-    jvmTarget = "1.8"
-}
-
 java {
     withJavadocJar()
     withSourcesJar()
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(11))
+    }
 }
 
 dependencies {
@@ -78,17 +67,17 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 
     // This dependency is used by the application.
-    implementation("org.junit.jupiter:junit-jupiter:5.8.1")
+    implementation("org.junit.jupiter:junit-jupiter:5.9.0")
 
     // Use the Kotlin JUnit integration.
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.4.0-RC")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.4.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.0")
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.21.0")
     implementation("info.picocli:picocli:4.6.3")
     implementation("io.javalin:javalin:4.6.4")
     implementation("org.slf4j:slf4j-simple:1.8.0-beta4")
-    implementation("com.github.parttimenerd:jfrtofp:main-SNAPSHOT") {
+    implementation("me.bechberger:jfrtofp:0.0.1-SNAPSHOT") {
         this.isChanging = true
     }
 }
@@ -99,11 +88,11 @@ tasks.test {
 
 application {
     // Define the main class for the application.
-    mainClass.set("me.bechberger.jfrtofp.server.MainKt")
+    mainClass.set("me.bechberger.jfrtofp.server.Main")
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions.jvmTarget = "11"
 }
 
 tasks.register<Copy>("copyHooks") {
@@ -158,10 +147,4 @@ publishing {
 
 signing {
     sign(publishing.publications["mavenJava"])
-}
-
-repositories {
-    maven {
-        url = uri("https://jitpack.io")
-    }
 }

@@ -1,5 +1,0 @@
-jdk:
-  - openjdk11
-before_install:
-  - sudo apt-get install -y nodejs npm
-  - ./build.sh
