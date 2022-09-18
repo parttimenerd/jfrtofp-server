@@ -77,7 +77,7 @@ dependencies {
     implementation("info.picocli:picocli:4.6.3")
     implementation("io.javalin:javalin:4.6.4")
     implementation("org.slf4j:slf4j-simple:1.8.0-beta4")
-    implementation("me.bechberger:jfrtofp:0.0.1-SNAPSHOT") {
+    implementation("me.bechberger:jfrtofp:0.0.2-SNAPSHOT") {
         this.isChanging = true
     }
 }

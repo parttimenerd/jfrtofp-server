@@ -5,6 +5,9 @@
 Bundle of the [JFR to FirefoxProfiler converter](https://github.com/parttimenerd/jfrtofp-server) 
 with a custom [Firefox Profiler](https://profiler.firefox.com) for JDK 11+.
 
+It actually uses the custom [Firefox Profiler fork](https://github.com/parttimenerd/firefox-profiler/tree/merged)
+which includes many of our own PRs which are not yet upstream (and might be less stable).
+
 ## Basic Usage
 Download the latest `jfrtofp-server-all.jar` release and simply pass the JFR file as its first argument:
 
