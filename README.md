@@ -21,7 +21,7 @@ This will start a server at `localhost:4243`, `localhost:4243/` redirects to the
 Requires NodeJS (see Firefox Profiler build instructions) to be installed.
 
 ```sh
-  git clone https://github.com/parttimenerd/jfrtofp-server.git
+  git clone --recursive https://github.com/parttimenerd/jfrtofp-server.git
   cd jfrtofp-server
   ./build.sh
   ./gradlew run --args="samples/small_profile.jfr"
