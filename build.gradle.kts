@@ -30,9 +30,6 @@ plugins {
 
     id("com.github.johnrengelman.shadow") version "7.1.2"
 
-    id("io.gitlab.arturbosch.detekt") version "1.21.0"
-    id("org.jlleitschuh.gradle.ktlint") version "11.0.0"
-
     id("maven-publish")
 
     id("java-library")
@@ -44,12 +41,6 @@ plugins {
 }
 
 apply { plugin("com.github.johnrengelman.shadow") }
-
-detekt {
-    buildUponDefaultConfig = true // preconfigure defaults
-    config = files("$rootDir/config/detekt/detekt.yml")
-    autoCorrect = true
-}
 
 java {
     withJavadocJar()
@@ -73,10 +64,9 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.4.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.0")
-    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.21.0")
-    implementation("info.picocli:picocli:4.6.3")
-    implementation("io.javalin:javalin:4.6.4")
-    implementation("org.slf4j:slf4j-simple:1.8.0-beta4")
+    implementation("info.picocli:picocli:4.7.0")
+    implementation("io.javalin:javalin:4.6.7")
+    implementation("org.slf4j:slf4j-simple:2.0.5")
     implementation("me.bechberger:jfrtofp:0.0.2-SNAPSHOT") {
         this.isChanging = true
     }
@@ -91,16 +81,12 @@ application {
     mainClass.set("me.bechberger.jfrtofp.server.Main")
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions.jvmTarget = "11"
-}
-
 tasks.register<Copy>("copyHooks") {
     from("bin/pre-commit")
     into(".git/hooks")
 }
 
-tasks.findByName("build")?.dependsOn(tasks.findByName("copyHooks"))
+//tasks.findByName("build")?.dependsOn(tasks.findByName("copyHooks"))
 
 publishing {
     publications {

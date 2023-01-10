@@ -4,7 +4,6 @@ import io.javalin.Javalin;
 import io.javalin.core.util.Header;
 import io.javalin.http.staticfiles.Location;
 import kotlin.Pair;
-import me.bechberger.jfrtofp.Config;
 import me.bechberger.jfrtofp.FileCache;
 
 import java.io.IOException;
@@ -18,10 +17,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.logging.Logger;
 
-import me.bechberger.jfrtofp.FirefoxProfileGenerator;
-import me.bechberger.jfrtofp.ProcessorKt;
+import me.bechberger.jfrtofp.processor.Config;
 import org.jetbrains.annotations.Nullable;
 
 
@@ -36,14 +35,11 @@ public class Server implements Runnable {
     public static class JFRFileInfo {
         private final Path file;
         @Nullable
-        private Consumer<NavigationDestination> navigationHelper;
-        @Nullable
         private Config config;
 
-        public JFRFileInfo(Path file, @Nullable Consumer<NavigationDestination> navigationHelper,
+        public JFRFileInfo(Path file,
                            @Nullable Config config) {
             this.file = file;
-            this.navigationHelper = navigationHelper;
             this.config = config;
         }
     }
@@ -54,14 +50,25 @@ public class Server implements Runnable {
     private final FileCache fileCache;
     private volatile Config config;
 
+    @Nullable
+    private final Function<NavigationDestination, String> fileGetter;
+    @Nullable
+    private final Consumer<NavigationDestination> navigate;
+
+    public Server(int port, long fileCacheSize, Config config) {
+        this(port, fileCacheSize, config, null, null);
+    }
+
     /**
      * port == -1: choose new, fileCacheSize == -1: default
      */
-    public Server(int port, long fileCacheSize, Config config) {
+    public Server(int port, long fileCacheSize, Config config, @Nullable Function<NavigationDestination, String> fileGetter, @Nullable Consumer<NavigationDestination> navigate) {
         long size = fileCacheSize != -1 ? fileCacheSize : DEFAULT_FILE_CACHE_SIZE;
         this.fileCache = new FileCache(null, size, ".json.gz");
         this.config = config;
         this.port = port == -1 ? findNewPort() : port;
+        this.fileGetter = fileGetter;
+        this.navigate = navigate;
     }
 
     public int getPort() {
@@ -93,8 +100,7 @@ public class Server implements Runnable {
             app.get("/files/{name}.json.gz", ctx -> {
                 var name = ctx.pathParam("name");
                 var requestedFile = registeredFiles.getOrDefault(name,
-                        new JFRFileInfo(Path.of(name + ".jfr"), null,
-                        null));
+                        new JFRFileInfo(Path.of(name + ".jfr"), new Config()));
                 if (Files.notExists(requestedFile.file)) {
                     ctx.redirect("https://http.cat/404");
                     return;
@@ -106,6 +112,29 @@ public class Server implements Runnable {
                 ctx.res.setHeader(Header.CONTENT_ENCODING, "gzip");
                 ctx.res.setHeader(Header.ACCESS_CONTROL_ALLOW_ORIGIN, "*");
             });
+            config.setSourceUrl("localhost:" + port + "/navigate");
+            if (navigate != null) {
+                app.post("/navigate", ctx -> {
+                    var name = ctx.queryParam("name");
+                    var file = ctx.queryParam("file");
+                    var line = Integer.parseInt(Objects.requireNonNull(ctx.queryParam("line")));
+                    var column = Integer.parseInt(Objects.requireNonNull(ctx.queryParam("column")));
+                    var destination = new NavigationDestination(name, file, line, column);
+                    navigate.accept(destination);
+                    ctx.result("ok");
+                });
+            }
+            if (fileGetter != null) {
+                app.get("/navigate", ctx -> {
+                    var name = ctx.queryParam("name");
+                    var file = ctx.queryParam("file");
+                    var line = Integer.parseInt(Objects.requireNonNull(ctx.queryParam("line")));
+                    var column = Integer.parseInt(Objects.requireNonNull(ctx.queryParam("column")));
+                    var destination = new NavigationDestination(name, file, line, column);
+                    var result = fileGetter.apply(destination);
+                    ctx.result(result);
+                });
+            }
             app.start(port);
             app.get("/show/{name}", ctx -> {
                 var targetUrl = getFirefoxProfilerURL(ctx.pathParam("name"));
@@ -149,7 +178,6 @@ public class Server implements Runnable {
                                   @Nullable Config config) {
         if (fileToId.containsKey(file)) {
             var p = fileToId.get(file);
-            p.getSecond().navigationHelper = navigationHelper;
             p.getSecond().config = config;
             return p.getFirst();
         }
@@ -163,7 +191,7 @@ public class Server implements Runnable {
             newName = name + "_" + i;
             i++;
         }
-        registeredFiles.put(newName, new JFRFileInfo(file, navigationHelper, config));
+        registeredFiles.put(newName, new JFRFileInfo(file, config));
         fileToId.put(file, new Pair<>(newName, registeredFiles.get(newName)));
         return newName;
     }
@@ -197,12 +225,5 @@ public class Server implements Runnable {
 
     public static Server getInstance() {
         return getInstance(-1, null);
-    }
-
-    /** Returns the url for the passed JFR file and starts the server if needed */
-    public static String getURLForFile(Path file, @Nullable Consumer<NavigationDestination> navigationHelper,
-                                       @Nullable Config config) {
-        var server = getInstance();
-        return server.getFirefoxProfilerURL(server.registerJFRFile(file, navigationHelper, config));
     }
 }

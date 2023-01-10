@@ -3,16 +3,16 @@ package me.bechberger.jfrtofp.server;
 import org.jetbrains.annotations.Nullable;
 
 public class NavigationDestination {
-    public final String packageName;
-    public final String className;
+    public final String name;
     @Nullable
-    public final String methodNameAndDescriptor;
-    public final int lineNumber;
+    public final String file;
+    public final int line;
+    public final int column;
 
-    public NavigationDestination(String packageName, String className, @Nullable String methodNameAndDescriptor, int lineNumber) {
-        this.packageName = packageName;
-        this.className = className;
-        this.methodNameAndDescriptor = methodNameAndDescriptor;
-        this.lineNumber = lineNumber;
+    public NavigationDestination(String name, @Nullable String file, int line, int column) {
+        this.name = name;
+        this.file = file;
+        this.line = line;
+        this.column = column;
     }
 }

@@ -1,6 +1,6 @@
 package me.bechberger.jfrtofp.server;
 
-import me.bechberger.jfrtofp.ConfigMixin;
+import me.bechberger.jfrtofp.processor.ConfigMixin;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
