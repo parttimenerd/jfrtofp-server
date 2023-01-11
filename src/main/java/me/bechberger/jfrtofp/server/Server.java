@@ -2,6 +2,7 @@ package me.bechberger.jfrtofp.server;
 
 import io.javalin.Javalin;
 import io.javalin.core.util.Header;
+import io.javalin.core.util.JavalinLogger;
 import io.javalin.http.staticfiles.Location;
 import kotlin.Pair;
 import me.bechberger.jfrtofp.FileCache;
@@ -18,10 +19,14 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import me.bechberger.jfrtofp.processor.Config;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Slf4jLog;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -55,28 +60,44 @@ public class Server implements Runnable {
     @Nullable
     private final Consumer<NavigationDestination> navigate;
 
-    public Server(int port, long fileCacheSize, Config config) {
-        this(port, fileCacheSize, config, null, null);
+    private final boolean verbose;
+
+    public Server(int port, long fileCacheSize, Config config, boolean verbose) {
+        this(port, fileCacheSize, config, null, null, verbose);
     }
 
     /**
      * port == -1: choose new, fileCacheSize == -1: default
      */
-    public Server(int port, long fileCacheSize, Config config, @Nullable Function<NavigationDestination, String> fileGetter, @Nullable Consumer<NavigationDestination> navigate) {
+    public Server(int port, long fileCacheSize, Config config, @Nullable Function<NavigationDestination, String> fileGetter, @Nullable Consumer<NavigationDestination> navigate, boolean verbose) {
         long size = fileCacheSize != -1 ? fileCacheSize : DEFAULT_FILE_CACHE_SIZE;
         this.fileCache = new FileCache(null, size, ".json.gz");
         this.config = config;
         this.port = port == -1 ? findNewPort() : port;
         this.fileGetter = fileGetter;
         this.navigate = navigate;
+        this.verbose = verbose;
+        LOG.setLevel(verbose ? Level.INFO : Level.WARNING);
+        if (!verbose) {
+            JavalinLogger.enabled = false;
+        }
     }
 
     public int getPort() {
         return port;
     }
 
+    void modfiyConfig(Config config) {
+        if (navigate != null) {
+            config.setSourceUrl("post|http://localhost:" + port + "/navigate");
+        } else if (fileGetter != null) {
+            config.setSourceUrl("http://localhost:" + port + "/navigate");
+        }
+    }
+
     @Override
     public void run() {
+        Log.getProperties().setProperty("org.eclipse.jetty.util.log.announce", "false");
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (fileCache != null) {
                 fileCache.close();
@@ -106,13 +127,14 @@ public class Server implements Runnable {
                     return;
                 }
                 var config = requestedFile.config != null ? requestedFile.config : this.config;
+                modfiyConfig(config);
                 LOG.info("Processing " + requestedFile.file.toFile());
                 ctx.result(Files.newInputStream(fileCache.get(requestedFile.file, config)));
                 ctx.res.setHeader(Header.CONTENT_TYPE, "application/json");
                 ctx.res.setHeader(Header.CONTENT_ENCODING, "gzip");
                 ctx.res.setHeader(Header.ACCESS_CONTROL_ALLOW_ORIGIN, "*");
             });
-            config.setSourceUrl("localhost:" + port + "/navigate");
+            modfiyConfig(config);
             if (navigate != null) {
                 app.post("/navigate", ctx -> {
                     var name = ctx.queryParam("name");
@@ -210,9 +232,9 @@ public class Server implements Runnable {
 
     private static Server instance;
 
-    public static synchronized Server getInstance(long fileCacheSize, @Nullable Config config) {
+    public static synchronized Server getInstance(long fileCacheSize, @Nullable Config config, boolean verbose) {
         if (instance == null) {
-            instance = new Server(-1, fileCacheSize, config);
+            instance = new Server(-1, fileCacheSize, config, verbose);
             new Thread(instance).start();
         } else {
             if (fileCacheSize != -1) {
@@ -224,6 +246,6 @@ public class Server implements Runnable {
     }
 
     public static Server getInstance() {
-        return getInstance(-1, null);
+        return getInstance(-1, null, false);
     }
 }

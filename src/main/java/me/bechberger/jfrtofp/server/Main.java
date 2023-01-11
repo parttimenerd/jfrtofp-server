@@ -28,6 +28,9 @@ public class Main implements Runnable {
     @Option(names = {"-p", "--port"}, description = "Port to run the server on, default is 4243")
     private int port = 0;
 
+    @Option(names = {"-v", "--verbose"}, description = "Verbose output")
+    private boolean verbose = false;
+
     @Override
     public void run() {
         var config = ConfigMixin.Companion.parseConfig(this.config);
@@ -38,7 +41,7 @@ public class Main implements Runnable {
                 port = findNewPort();
             }
         }
-        var server = new Server(port, -1, config);
+        var server = new Server(port, -1, config, (n) -> n.file, null, verbose);
         var name = server.registerJFRFile(file, null, config);
         System.out.println("-------------------------------------------------");
         System.out.println("Navigate to " + server.getFirefoxProfilerURL(name) + " to launch the profiler view");
