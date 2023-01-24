@@ -5,16 +5,14 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
+
 import java.nio.file.Path;
 
 import static me.bechberger.jfrtofp.server.Server.findNewPort;
 import static me.bechberger.jfrtofp.server.Server.isPortUsable;
 
-@Command(
-    name = "jfrtofp-server",
-    mixinStandardHelpOptions = true,
-    description = "Launch a firefox profiler instance for a given JFR file"
-)
+@Command(name = "jfrtofp-server", mixinStandardHelpOptions = true, description = "Launch a firefox profiler instance "
+        + "for a given JFR file")
 public class Main implements Runnable {
 
     public static final int DEFAULT_PORT = 4243;
@@ -22,7 +20,8 @@ public class Main implements Runnable {
     @Parameters(index = "0", description = "The JFR file to view")
     private Path file;
 
-    @Option(names = {"-c", "--config"}, description = "Configuration passed directly to the converter", defaultValue = "")
+    @Option(names = {"-c", "--config"}, description = "Configuration passed directly to the converter", defaultValue
+            = "")
     private String config;
 
     @Option(names = {"-p", "--port"}, description = "Port to run the server on, default is 4243")
@@ -41,7 +40,9 @@ public class Main implements Runnable {
                 port = findNewPort();
             }
         }
-        var server = new Server(port, -1, config, (n) -> n.file, null, verbose);
+        var server = verbose ? new Server(port, -1, config, (n) -> n.pkg, (n) -> {
+            System.out.println("Navigate to " + n);
+        }, verbose) : new Server(port, -1, config, null, null, verbose);
         var name = server.registerJFRFile(file, null, config);
         System.out.println("-------------------------------------------------");
         System.out.println("Navigate to " + server.getFirefoxProfilerURL(name) + " to launch the profiler view");

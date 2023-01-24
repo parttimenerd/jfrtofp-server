@@ -5,6 +5,11 @@
 Bundle of the [JFR to FirefoxProfiler converter](https://github.com/parttimenerd/jfrtofp-server) 
 with a custom [Firefox Profiler](https://profiler.firefox.com) for JDK 11+.
 
+The project is the base for my [Java Profiler Plugin](https://github.com/parttimenerd/intellij-profiler-plugin) 
+for IntelliJ IDEA.
+
+*This is in alpha state, it does not work with really large JFR files and might still have bugs.*
+
 It actually uses the custom [Firefox Profiler fork](https://github.com/parttimenerd/firefox-profiler/tree/merged)
 which includes many of our own PRs which are not yet upstream (and might be less stable).
 

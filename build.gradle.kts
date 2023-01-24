@@ -66,6 +66,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.0")
     implementation("info.picocli:picocli:4.7.0")
     implementation("io.javalin:javalin:4.6.7")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.13.0")
     implementation("org.slf4j:slf4j-simple:2.0.5")
     implementation("me.bechberger:jfrtofp:0.0.2-SNAPSHOT") {
         this.isChanging = true

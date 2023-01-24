@@ -1,11 +1,16 @@
 package me.bechberger.jfrtofp.server;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.Javalin;
 import io.javalin.core.util.Header;
 import io.javalin.core.util.JavalinLogger;
 import io.javalin.http.staticfiles.Location;
 import kotlin.Pair;
 import me.bechberger.jfrtofp.FileCache;
+import me.bechberger.jfrtofp.processor.Config;
+import org.eclipse.jetty.util.log.Log;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -13,20 +18,15 @@ import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import me.bechberger.jfrtofp.processor.Config;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Slf4jLog;
-import org.jetbrains.annotations.Nullable;
-import org.slf4j.LoggerFactory;
+import java.util.stream.Collectors;
 
 
 /**
@@ -56,7 +56,7 @@ public class Server implements Runnable {
     private volatile Config config;
 
     @Nullable
-    private final Function<NavigationDestination, String> fileGetter;
+    private final Function<ClassLocation, String> fileGetter;
     @Nullable
     private final Consumer<NavigationDestination> navigate;
 
@@ -69,7 +69,9 @@ public class Server implements Runnable {
     /**
      * port == -1: choose new, fileCacheSize == -1: default
      */
-    public Server(int port, long fileCacheSize, Config config, @Nullable Function<NavigationDestination, String> fileGetter, @Nullable Consumer<NavigationDestination> navigate, boolean verbose) {
+    public Server(int port, long fileCacheSize, Config config,
+                  @Nullable Function<ClassLocation, String> fileGetter,
+                  @Nullable Consumer<NavigationDestination> navigate, boolean verbose) {
         long size = fileCacheSize != -1 ? fileCacheSize : DEFAULT_FILE_CACHE_SIZE;
         this.fileCache = new FileCache(null, size, ".json.gz");
         this.config = config;
@@ -92,7 +94,17 @@ public class Server implements Runnable {
             config.setSourceUrl("post|http://localhost:" + port + "/navigate");
         } else if (fileGetter != null) {
             config.setSourceUrl("http://localhost:" + port + "/navigate");
+        } else {
+            config.setSourceUrl(null);
         }
+    }
+
+    private static Pair<String, String> splitPathIntoPkgAndClass(String matchedPath, String path) {
+        var fullyQualified = path.substring(matchedPath.length());
+        var parts = Arrays.asList(fullyQualified.split("[.]"));
+        var pkg = parts.stream().limit(parts.size() - 2).collect(Collectors.joining("."));
+        var klass = parts.get(parts.size() - 2);
+        return new Pair<>(pkg, klass);
     }
 
     @Override
@@ -136,23 +148,22 @@ public class Server implements Runnable {
             });
             modfiyConfig(config);
             if (navigate != null) {
-                app.post("/navigate", ctx -> {
-                    var name = ctx.queryParam("name");
-                    var file = ctx.queryParam("file");
-                    var line = Integer.parseInt(Objects.requireNonNull(ctx.queryParam("line")));
-                    var column = Integer.parseInt(Objects.requireNonNull(ctx.queryParam("column")));
-                    var destination = new NavigationDestination(name, file, line, column);
+                app.post("/navigate/*", ctx -> {
+                    var pkgAndClass = splitPathIntoPkgAndClass("/navigate/", ctx.path());
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    JsonNode jsonNode = objectMapper.readTree(ctx.body());
+                    var destination = new NavigationDestination(pkgAndClass.getFirst(), pkgAndClass.getSecond(),
+                            jsonNode.get("method").asText().split("[.]", 2)[1], jsonNode.get("line").asInt(-1));
+                    LOG.info("Navigating to " + destination);
                     navigate.accept(destination);
                     ctx.result("ok");
                 });
             }
             if (fileGetter != null) {
-                app.get("/navigate", ctx -> {
-                    var name = ctx.queryParam("name");
-                    var file = ctx.queryParam("file");
-                    var line = Integer.parseInt(Objects.requireNonNull(ctx.queryParam("line")));
-                    var column = Integer.parseInt(Objects.requireNonNull(ctx.queryParam("column")));
-                    var destination = new NavigationDestination(name, file, line, column);
+                app.get("/navigate/*", ctx -> {
+                    var pkgAndClass = splitPathIntoPkgAndClass("/navigate/", ctx.path());
+                    var destination = new ClassLocation(pkgAndClass.getFirst(), pkgAndClass.getSecond());
+                    LOG.info("Getting file " + destination);
                     var result = fileGetter.apply(destination);
                     ctx.result(result);
                 });
@@ -197,7 +208,7 @@ public class Server implements Runnable {
     }
 
     String registerJFRFile(Path file, @Nullable Consumer<NavigationDestination> navigationHelper,
-                                  @Nullable Config config) {
+                           @Nullable Config config) {
         if (fileToId.containsKey(file)) {
             var p = fileToId.get(file);
             p.getSecond().config = config;
