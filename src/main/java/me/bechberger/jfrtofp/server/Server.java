@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
  */
 public class Server implements Runnable {
 
+    public static final int DEFAULT_PORT = 4243;
     private final static long DEFAULT_FILE_CACHE_SIZE = 2_000_000_000;
     private final static Logger LOG = Logger.getLogger("Server");
 
@@ -62,6 +63,17 @@ public class Server implements Runnable {
 
     private final boolean verbose;
 
+    public static int findPort() {
+        if (isPortUsable(DEFAULT_PORT)) {
+            return DEFAULT_PORT;
+        }
+        return findNewPort();
+    }
+
+    public Server(@Nullable Function<ClassLocation, String> fileGetter, @Nullable Consumer<NavigationDestination> navigate) {
+        this(-1, DEFAULT_FILE_CACHE_SIZE, new Config(), fileGetter, navigate, false);
+    }
+
     public Server(int port, long fileCacheSize, Config config, boolean verbose) {
         this(port, fileCacheSize, config, null, null, verbose);
     }
@@ -75,7 +87,7 @@ public class Server implements Runnable {
         long size = fileCacheSize != -1 ? fileCacheSize : DEFAULT_FILE_CACHE_SIZE;
         this.fileCache = new FileCache(null, size, ".json.gz");
         this.config = config;
-        this.port = port == -1 ? findNewPort() : port;
+        this.port = port == -1 ? findPort() : port;
         this.fileGetter = fileGetter;
         this.navigate = navigate;
         this.verbose = verbose;
@@ -182,13 +194,17 @@ public class Server implements Runnable {
         }
     }
 
-    public String getJSONURL(String name) {
+    String getJSONURL(String name) {
         return String.format("http://localhost:%d/files/%s.json.gz", port, name);
     }
 
     String getFirefoxProfilerURL(String name) {
         return String.format("http://localhost:%d/from-url/%s", port,
                 URLEncoder.encode(getJSONURL(name), Charset.defaultCharset()));
+    }
+
+    public String getFirefoxProfilerURLAndRegister(Path file) {
+        return getFirefoxProfilerURL(registerJFRFile(file, null));
     }
 
     public static int findNewPort() {
@@ -207,7 +223,7 @@ public class Server implements Runnable {
         }
     }
 
-    String registerJFRFile(Path file, @Nullable Consumer<NavigationDestination> navigationHelper,
+    String registerJFRFile(Path file,
                            @Nullable Config config) {
         if (fileToId.containsKey(file)) {
             var p = fileToId.get(file);
@@ -243,20 +259,41 @@ public class Server implements Runnable {
 
     private static Server instance;
 
-    public static synchronized Server getInstance(long fileCacheSize, @Nullable Config config, boolean verbose) {
+    private static Thread thread;
+
+    public static synchronized Server getInstance(long fileCacheSize, @Nullable Config config, @Nullable Function<ClassLocation, String> fileGetter, @Nullable Consumer<NavigationDestination> navigate) {
         if (instance == null) {
-            instance = new Server(-1, fileCacheSize, config, verbose);
+            instance = new Server(-1, fileCacheSize, config, fileGetter, navigate, false);
             new Thread(instance).start();
         } else {
             if (fileCacheSize != -1) {
                 instance.setCacheSize(fileCacheSize);
             }
-            instance.config = config;
+            if (config != null) {
+                instance.setConfig(config);
+            }
         }
         return instance;
     }
 
-    public static Server getInstance() {
-        return getInstance(-1, null, false);
+    public static Server getInstance(@Nullable Function<ClassLocation, String> fileGetter, @Nullable Consumer<NavigationDestination> navigate) {
+        return getInstance(-1, null, fileGetter, navigate);
+    }
+
+    public static synchronized void startIfNeeded(@Nullable Function<ClassLocation, String> fileGetter,
+                                                  @Nullable Consumer<NavigationDestination> navigate) {
+        if (thread == null) {
+            thread = new Thread(getInstance(fileGetter, navigate));
+            thread.start();
+        }
+    }
+
+    public static synchronized String startIfNeededAndGetUrl(Path jfrFile, @Nullable Function<ClassLocation, String> fileGetter,
+                                                  @Nullable Consumer<NavigationDestination> navigate) {
+        if (thread == null) {
+            thread = new Thread(getInstance(fileGetter, navigate));
+            thread.start();
+        }
+        return instance.getFirefoxProfilerURLAndRegister(jfrFile);
     }
 }

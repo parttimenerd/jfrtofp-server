@@ -15,8 +15,6 @@ import static me.bechberger.jfrtofp.server.Server.isPortUsable;
         + "for a given JFR file")
 public class Main implements Runnable {
 
-    public static final int DEFAULT_PORT = 4243;
-
     @Parameters(index = "0", description = "The JFR file to view")
     private Path file;
 
@@ -34,16 +32,12 @@ public class Main implements Runnable {
     public void run() {
         var config = ConfigMixin.Companion.parseConfig(this.config);
         if (this.port == 0) {
-            if (isPortUsable(DEFAULT_PORT)) {
-                port = DEFAULT_PORT;
-            } else {
-                port = findNewPort();
-            }
+            port = Server.findPort();
         }
         var server = verbose ? new Server(port, -1, config, (n) -> n.pkg, (n) -> {
             System.out.println("Navigate to " + n);
         }, verbose) : new Server(port, -1, config, null, null, verbose);
-        var name = server.registerJFRFile(file, null, config);
+        var name = server.registerJFRFile(file, config);
         System.out.println("-------------------------------------------------");
         System.out.println("Navigate to " + server.getFirefoxProfilerURL(name) + " to launch the profiler view");
         System.out.println("-------------------------------------------------");
