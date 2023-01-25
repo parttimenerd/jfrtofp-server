@@ -38,21 +38,38 @@ public class Server implements Runnable {
     private final static long DEFAULT_FILE_CACHE_SIZE = 2_000_000_000;
     private final static Logger LOG = Logger.getLogger("Server");
 
-    public static class JFRFileInfo {
-        private final Path file;
+    public static class FileInfo {
+        public final Path file;
+
+        public FileInfo(Path file) {
+            this.file = file;
+        }
+    }
+
+    public static class JFRFileInfo extends FileInfo {
         @Nullable
         private Config config;
 
         public JFRFileInfo(Path file,
                            @Nullable Config config) {
-            this.file = file;
+            super(file);
             this.config = config;
         }
     }
 
-    private final int port;
-    private final Map<String, JFRFileInfo> registeredFiles = new HashMap<>();
-    private final Map<Path, Pair<String, JFRFileInfo>> fileToId = new HashMap<>();
+    public static class JSONGZFileInfo extends FileInfo {
+
+        public JSONGZFileInfo(Path file) {
+            super(file);
+        }
+    }
+
+    private int port;
+
+    private AtomicBoolean serverStarted = new AtomicBoolean(false);
+
+    private final Map<String, FileInfo> registeredFiles = new HashMap<>();
+    private final Map<Path, Pair<String, FileInfo>> fileToId = new HashMap<>();
     private final FileCache fileCache;
     private volatile Config config;
 
@@ -70,7 +87,8 @@ public class Server implements Runnable {
         return findNewPort();
     }
 
-    public Server(@Nullable Function<ClassLocation, String> fileGetter, @Nullable Consumer<NavigationDestination> navigate) {
+    public Server(@Nullable Function<ClassLocation, String> fileGetter,
+                  @Nullable Consumer<NavigationDestination> navigate) {
         this(-1, DEFAULT_FILE_CACHE_SIZE, new Config(), fileGetter, navigate, false);
     }
 
@@ -203,8 +221,11 @@ public class Server implements Runnable {
                 URLEncoder.encode(getJSONURL(name), Charset.defaultCharset()));
     }
 
+    /**
+     * Supports .json.gz and .jfr files
+     */
     public String getFirefoxProfilerURLAndRegister(Path file) {
-        return getFirefoxProfilerURL(registerJFRFile(file, null));
+        return getFirefoxProfilerURL(registerFile(file, null));
     }
 
     public static int findNewPort() {
@@ -223,16 +244,30 @@ public class Server implements Runnable {
         }
     }
 
-    String registerJFRFile(Path file,
-                           @Nullable Config config) {
+    /**
+     * Supports .json.gz and .jfr files
+     */
+    String registerFile(Path file,
+                        @Nullable Config config) {
         if (fileToId.containsKey(file)) {
             var p = fileToId.get(file);
-            p.getSecond().config = config;
-            return p.getFirst();
+            var id = p.getFirst();
+            var info = p.getSecond();
+            if (info instanceof JFRFileInfo) {
+                ((JFRFileInfo) info).config = config;
+            }
+            return id;
         }
         var name = file.getFileName().toString();
+        String end = "";
         if (name.endsWith(".jfr")) {
             name = name.substring(0, name.length() - 4);
+            end = ".jfr";
+        } else if (name.endsWith(".json.gz")) {
+            name = name.substring(0, name.length() - 8);
+            end = ".json.gz";
+        } else {
+            throw new IllegalArgumentException("File must end with .jfr or .json.gz");
         }
         var i = 0;
         var newName = name;
@@ -240,7 +275,11 @@ public class Server implements Runnable {
             newName = name + "_" + i;
             i++;
         }
-        registeredFiles.put(newName, new JFRFileInfo(file, config));
+        if (end.equals(".jfr")) {
+            registeredFiles.put(newName, new JFRFileInfo(file, config));
+        } else {
+            registeredFiles.put(newName, new JSONGZFileInfo(file));
+        }
         fileToId.put(file, new Pair<>(newName, registeredFiles.get(newName)));
         return newName;
     }
@@ -276,7 +315,8 @@ public class Server implements Runnable {
         return instance;
     }
 
-    public static Server getInstance(@Nullable Function<ClassLocation, String> fileGetter, @Nullable Consumer<NavigationDestination> navigate) {
+    public static Server getInstance(@Nullable Function<ClassLocation, String> fileGetter,
+                                     @Nullable Consumer<NavigationDestination> navigate) {
         return getInstance(-1, null, fileGetter, navigate);
     }
 
@@ -288,12 +328,16 @@ public class Server implements Runnable {
         }
     }
 
-    public static synchronized String startIfNeededAndGetUrl(Path jfrFile, @Nullable Function<ClassLocation, String> fileGetter,
-                                                  @Nullable Consumer<NavigationDestination> navigate) {
+    /**
+     * Supports .json.gz and .jfr files
+     */
+    public static synchronized String startIfNeededAndGetUrl(Path file,
+                                                             @Nullable Function<ClassLocation, String> fileGetter,
+                                                             @Nullable Consumer<NavigationDestination> navigate) {
         if (thread == null) {
             thread = new Thread(getInstance(fileGetter, navigate));
             thread.start();
         }
-        return instance.getFirefoxProfilerURLAndRegister(jfrFile);
+        return instance.getFirefoxProfilerURLAndRegister(file);
     }
 }

@@ -37,7 +37,7 @@ public class Main implements Runnable {
         var server = verbose ? new Server(port, -1, config, (n) -> n.pkg, (n) -> {
             System.out.println("Navigate to " + n);
         }, verbose) : new Server(port, -1, config, null, null, verbose);
-        var name = server.registerJFRFile(file, config);
+        var name = server.registerFile(file, config);
         System.out.println("-------------------------------------------------");
         System.out.println("Navigate to " + server.getFirefoxProfilerURL(name) + " to launch the profiler view");
         System.out.println("-------------------------------------------------");
