@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.Javalin;
 import io.javalin.core.util.Header;
-import io.javalin.core.util.JavalinBindException;
+import io.javalin.core.util.JavalinException;
 import io.javalin.core.util.JavalinLogger;
 import io.javalin.http.staticfiles.Location;
 import kotlin.Pair;
@@ -228,7 +228,7 @@ public class Server implements Runnable {
     public void run() {
         try {
             startServer();
-        } catch (JavalinBindException ex) {
+        } catch (JavalinException ex) {
             this.port = -1;
             startServer();
         }
