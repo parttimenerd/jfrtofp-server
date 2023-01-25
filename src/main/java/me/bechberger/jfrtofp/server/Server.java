@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.Javalin;
 import io.javalin.core.util.Header;
+import io.javalin.core.util.JavalinBindException;
 import io.javalin.core.util.JavalinLogger;
 import io.javalin.http.staticfiles.Location;
 import kotlin.Pair;
@@ -13,6 +14,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
@@ -22,6 +24,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -64,6 +67,9 @@ public class Server implements Runnable {
         }
     }
 
+    /**
+     * might change if Javalin has problems binding to it
+     */
     private int port;
 
     private AtomicBoolean serverStarted = new AtomicBoolean(false);
@@ -137,8 +143,7 @@ public class Server implements Runnable {
         return new Pair<>(pkg, klass);
     }
 
-    @Override
-    public void run() {
+    private void startServer() {
         Log.getProperties().setProperty("org.eclipse.jetty.util.log.announce", "false");
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (fileCache != null) {
@@ -163,15 +168,20 @@ public class Server implements Runnable {
             app.get("/files/{name}.json.gz", ctx -> {
                 var name = ctx.pathParam("name");
                 var requestedFile = registeredFiles.getOrDefault(name,
-                        new JFRFileInfo(Path.of(name + ".jfr"), new Config()));
+                        new JSONGZFileInfo(Path.of(name + ".json.gz")));
                 if (Files.notExists(requestedFile.file)) {
                     ctx.redirect("https://http.cat/404");
                     return;
                 }
-                var config = requestedFile.config != null ? requestedFile.config : this.config;
-                modfiyConfig(config);
-                LOG.info("Processing " + requestedFile.file.toFile());
-                ctx.result(Files.newInputStream(fileCache.get(requestedFile.file, config)));
+                if (requestedFile instanceof JFRFileInfo) {
+                    var jfrFile = (JFRFileInfo) requestedFile;
+                    var config = jfrFile.config != null ? jfrFile.config : this.config;
+                    modfiyConfig(config);
+                    LOG.info("Processing " + jfrFile.file.toFile());
+                    ctx.result(Files.newInputStream(fileCache.get(jfrFile.file, config)));
+                } else {
+                    ctx.result(Files.newInputStream(requestedFile.file));
+                }
                 ctx.res.setHeader(Header.CONTENT_TYPE, "application/json");
                 ctx.res.setHeader(Header.CONTENT_ENCODING, "gzip");
                 ctx.res.setHeader(Header.ACCESS_CONTROL_ALLOW_ORIGIN, "*");
@@ -199,16 +209,28 @@ public class Server implements Runnable {
                 });
             }
             app.start(port);
+            port = app.port();
             app.get("/show/{name}", ctx -> {
                 var targetUrl = getFirefoxProfilerURL(ctx.pathParam("name"));
                 System.out.printf("Redirecting to " + targetUrl + "\n");
                 ctx.redirect(targetUrl);
             });
+            serverStarted.set(true);
             Thread.currentThread().setContextClassLoader(classLoader);
             try {
                 Objects.requireNonNull(app.jettyServer()).server().join();
             } catch (Exception ignored) {
             }
+        }
+    }
+
+    @Override
+    public void run() {
+        try {
+            startServer();
+        } catch (JavalinBindException ex) {
+            this.port = -1;
+            startServer();
         }
     }
 
@@ -238,6 +260,7 @@ public class Server implements Runnable {
 
     public static boolean isPortUsable(int port) {
         try (var socket = new ServerSocket(port)) {
+            socket.bind(new InetSocketAddress(port));
             return true;
         } catch (IOException e) {
             return false;
@@ -300,9 +323,12 @@ public class Server implements Runnable {
 
     private static Thread thread;
 
-    public static synchronized Server getInstance(long fileCacheSize, @Nullable Config config, @Nullable Function<ClassLocation, String> fileGetter, @Nullable Consumer<NavigationDestination> navigate) {
+    public static synchronized Server getInstance(long fileCacheSize, @Nullable Config config,
+                                                  @Nullable Function<ClassLocation, String> fileGetter,
+                                                  @Nullable Consumer<NavigationDestination> navigate) {
         if (instance == null) {
-            instance = new Server(-1, fileCacheSize, config, fileGetter, navigate, false);
+            instance = new Server(-1, fileCacheSize, config == null ? new Config() : config, fileGetter, navigate,
+                    false);
             new Thread(instance).start();
         } else {
             if (fileCacheSize != -1) {
@@ -325,6 +351,7 @@ public class Server implements Runnable {
         if (thread == null) {
             thread = new Thread(getInstance(fileGetter, navigate));
             thread.start();
+            while (!instance.serverStarted.get()) ; // should be a really short wait
         }
     }
 
