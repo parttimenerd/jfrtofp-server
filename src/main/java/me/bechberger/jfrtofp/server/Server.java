@@ -331,7 +331,7 @@ public class Server implements Runnable {
         if (instance == null) {
             instance = new Server(-1, fileCacheSize, config == null ? new Config() : config, fileGetter, navigate,
                     false);
-            thread = new Thread(getInstance(fileGetter, navigate));
+            thread = new Thread(instance);
             thread.start();
             while (!instance.serverStarted.get()) ; // should be a really short wait
         } else {
@@ -345,17 +345,18 @@ public class Server implements Runnable {
         return instance;
     }
 
-    public static Server getInstance(@Nullable Function<ClassLocation, String> fileGetter,
+    public static Server getInstance(@Nullable Config config, @Nullable Function<ClassLocation, String> fileGetter,
                                      @Nullable Consumer<NavigationDestination> navigate) {
-        return getInstance(-1, null, fileGetter, navigate);
+        return getInstance(-1, config, fileGetter, navigate);
     }
 
     /**
      * Supports .json.gz and .jfr files
      */
     public static synchronized String startIfNeededAndGetUrl(Path file,
+                                                             @Nullable Config config,
                                                              @Nullable Function<ClassLocation, String> fileGetter,
                                                              @Nullable Consumer<NavigationDestination> navigate) {
-        return getInstance(fileGetter, navigate).getFirefoxProfilerURLAndRegister(file);
+        return getInstance(config, fileGetter, navigate).getFirefoxProfilerURLAndRegister(file);
     }
 }
