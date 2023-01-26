@@ -126,10 +126,8 @@ public class Server implements Runnable {
     }
 
     void modfiyConfig(Config config) {
-        if (navigate != null) {
-            config.setSourceUrl("post|http://localhost:" + port + "/navigate");
-        } else if (fileGetter != null) {
-            config.setSourceUrl("http://localhost:" + port + "/navigate");
+        if (navigate != null || fileGetter != null) {
+            config.setSourceUrl("http://localhost:" + port + "/ide");
         } else {
             config.setSourceUrl(null);
         }
@@ -188,8 +186,8 @@ public class Server implements Runnable {
             });
             modfiyConfig(config);
             if (navigate != null) {
-                app.post("/navigate/*", ctx -> {
-                    var pkgAndClass = splitPathIntoPkgAndClass("/navigate/", ctx.path());
+                app.post("/ide/*", ctx -> {
+                    var pkgAndClass = splitPathIntoPkgAndClass("/ide/", ctx.path());
                     ObjectMapper objectMapper = new ObjectMapper();
                     JsonNode jsonNode = objectMapper.readTree(ctx.body());
                     var destination = new NavigationDestination(pkgAndClass.getFirst(), pkgAndClass.getSecond(),
@@ -200,8 +198,8 @@ public class Server implements Runnable {
                 });
             }
             if (fileGetter != null) {
-                app.get("/navigate/*", ctx -> {
-                    var pkgAndClass = splitPathIntoPkgAndClass("/navigate/", ctx.path());
+                app.get("/ide/*", ctx -> {
+                    var pkgAndClass = splitPathIntoPkgAndClass("/ide/", ctx.path());
                     var destination = new ClassLocation(pkgAndClass.getFirst(), pkgAndClass.getSecond());
                     LOG.info("Getting file " + destination);
                     var result = fileGetter.apply(destination);
