@@ -77,7 +77,7 @@ public class Server implements Runnable {
     private final Map<String, FileInfo> registeredFiles = new HashMap<>();
     private final Map<Path, Pair<String, FileInfo>> fileToId = new HashMap<>();
     private final FileCache fileCache;
-    private volatile Config config;
+    private Config config;
 
     @Nullable
     private final Function<ClassLocation, String> fileGetter;
@@ -86,7 +86,7 @@ public class Server implements Runnable {
 
     private final boolean verbose;
 
-    private Javalin app;
+    private volatile Javalin app;
 
     public static int findPort() {
         if (isPortUsable(DEFAULT_PORT)) {
@@ -262,6 +262,7 @@ public class Server implements Runnable {
     public static boolean isPortUsable(int port) {
         try (var socket = new ServerSocket(port)) {
             socket.bind(new InetSocketAddress(port));
+            socket.close();
             return true;
         } catch (IOException e) {
             return false;
@@ -330,7 +331,9 @@ public class Server implements Runnable {
         if (instance == null) {
             instance = new Server(-1, fileCacheSize, config == null ? new Config() : config, fileGetter, navigate,
                     false);
-            new Thread(instance).start();
+            thread = new Thread(getInstance(fileGetter, navigate));
+            thread.start();
+            while (!instance.serverStarted.get()) ; // should be a really short wait
         } else {
             if (fileCacheSize != -1) {
                 instance.setCacheSize(fileCacheSize);
@@ -347,22 +350,12 @@ public class Server implements Runnable {
         return getInstance(-1, null, fileGetter, navigate);
     }
 
-    public static synchronized void startIfNeeded(@Nullable Function<ClassLocation, String> fileGetter,
-                                                  @Nullable Consumer<NavigationDestination> navigate) {
-        if (thread == null) {
-            thread = new Thread(getInstance(fileGetter, navigate));
-            thread.start();
-            while (!instance.serverStarted.get()) ; // should be a really short wait
-        }
-    }
-
     /**
      * Supports .json.gz and .jfr files
      */
     public static synchronized String startIfNeededAndGetUrl(Path file,
                                                              @Nullable Function<ClassLocation, String> fileGetter,
                                                              @Nullable Consumer<NavigationDestination> navigate) {
-        startIfNeeded(fileGetter, navigate);
-        return instance.getFirefoxProfilerURLAndRegister(file);
+        return getInstance(fileGetter, navigate).getFirefoxProfilerURLAndRegister(file);
     }
 }
