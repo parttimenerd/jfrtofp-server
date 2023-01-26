@@ -86,6 +86,8 @@ public class Server implements Runnable {
 
     private final boolean verbose;
 
+    private Javalin app;
+
     public static int findPort() {
         if (isPortUsable(DEFAULT_PORT)) {
             return DEFAULT_PORT;
@@ -122,7 +124,7 @@ public class Server implements Runnable {
     }
 
     public int getPort() {
-        return port;
+        return app.port();
     }
 
     void modfiyConfig(Config config) {
@@ -206,13 +208,14 @@ public class Server implements Runnable {
                     ctx.result(result);
                 });
             }
-            app.start(port);
-            port = app.port();
             app.get("/show/{name}", ctx -> {
                 var targetUrl = getFirefoxProfilerURL(ctx.pathParam("name"));
                 System.out.printf("Redirecting to " + targetUrl + "\n");
                 ctx.redirect(targetUrl);
             });
+            app.start(port);
+            this.app = app;
+            port = app.port();
             serverStarted.set(true);
             Thread.currentThread().setContextClassLoader(classLoader);
             try {
@@ -233,11 +236,11 @@ public class Server implements Runnable {
     }
 
     String getJSONURL(String name) {
-        return String.format("http://localhost:%d/files/%s.json.gz", port, name);
+        return String.format("http://localhost:%d/files/%s.json.gz", getPort(), name);
     }
 
     String getFirefoxProfilerURL(String name) {
-        return String.format("http://localhost:%d/from-url/%s", port,
+        return String.format("http://localhost:%d/from-url/%s", getPort(),
                 URLEncoder.encode(getJSONURL(name), Charset.defaultCharset()));
     }
 
@@ -359,10 +362,7 @@ public class Server implements Runnable {
     public static synchronized String startIfNeededAndGetUrl(Path file,
                                                              @Nullable Function<ClassLocation, String> fileGetter,
                                                              @Nullable Consumer<NavigationDestination> navigate) {
-        if (thread == null) {
-            thread = new Thread(getInstance(fileGetter, navigate));
-            thread.start();
-        }
+        startIfNeeded(fileGetter, navigate);
         return instance.getFirefoxProfilerURLAndRegister(file);
     }
 }
