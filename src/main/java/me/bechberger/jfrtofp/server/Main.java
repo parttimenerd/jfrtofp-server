@@ -8,9 +8,6 @@ import picocli.CommandLine.Parameters;
 
 import java.nio.file.Path;
 
-import static me.bechberger.jfrtofp.server.Server.findNewPort;
-import static me.bechberger.jfrtofp.server.Server.isPortUsable;
-
 @Command(name = "jfrtofp-server", mixinStandardHelpOptions = true, description = "Launch a firefox profiler instance "
         + "for a given JFR file")
 public class Main implements Runnable {
@@ -34,14 +31,16 @@ public class Main implements Runnable {
         if (this.port == 0) {
             port = Server.findPort();
         }
-        var server = verbose ? new Server(port, -1, config, (n) -> n.pkg, (n) -> {
+        var url = verbose ? Server.startIfNeededAndGetUrl(port, file, config, (n) -> n.pkg, (n) -> {
             System.out.println("Navigate to " + n);
-        }, verbose) : new Server(port, -1, config, null, null, verbose);
-        var name = server.registerFile(file, config);
+        }, verbose) : Server.startIfNeededAndGetUrl(port, file, config, null, null, verbose);
         System.out.println("-------------------------------------------------");
-        System.out.println("Navigate to " + server.getFirefoxProfilerURL(name) + " to launch the profiler view");
+        System.out.println("Navigate to " + url + " to launch the profiler view");
         System.out.println("-------------------------------------------------");
-        server.run();
+        try {
+            Thread.currentThread().join();
+        } catch (InterruptedException e) {
+        }
     }
 
     public static void main(String[] args) {

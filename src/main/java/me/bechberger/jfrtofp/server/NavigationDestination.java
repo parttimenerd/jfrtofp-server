@@ -1,7 +1,5 @@
 package me.bechberger.jfrtofp.server;
 
-import org.jetbrains.annotations.Nullable;
-
 /**
  * Represents a method in a file, that can be navigated to
  */

@@ -14,7 +14,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
@@ -72,7 +71,7 @@ public class Server implements Runnable {
      */
     private int port;
 
-    private AtomicBoolean serverStarted = new AtomicBoolean(false);
+    private final AtomicBoolean serverStarted = new AtomicBoolean(false);
 
     private final Map<String, FileInfo> registeredFiles = new HashMap<>();
     private final Map<Path, Pair<String, FileInfo>> fileToId = new HashMap<>();
@@ -261,8 +260,6 @@ public class Server implements Runnable {
 
     public static boolean isPortUsable(int port) {
         try (var socket = new ServerSocket(port)) {
-            socket.bind(new InetSocketAddress(port));
-            socket.close();
             return true;
         } catch (IOException e) {
             return false;
@@ -284,7 +281,7 @@ public class Server implements Runnable {
             return id;
         }
         var name = file.getFileName().toString();
-        String end = "";
+        String end;
         if (name.endsWith(".jfr")) {
             name = name.substring(0, name.length() - 4);
             end = ".jfr";
@@ -325,12 +322,13 @@ public class Server implements Runnable {
 
     private static Thread thread;
 
-    public static synchronized Server getInstance(long fileCacheSize, @Nullable Config config,
+    public static synchronized Server getInstance(int port, long fileCacheSize, @Nullable Config config,
                                                   @Nullable Function<ClassLocation, String> fileGetter,
-                                                  @Nullable Consumer<NavigationDestination> navigate) {
+                                                  @Nullable Consumer<NavigationDestination> navigate,
+                                                  boolean verbose) {
         if (instance == null) {
-            instance = new Server(-1, fileCacheSize, config == null ? new Config() : config, fileGetter, navigate,
-                    false);
+            instance = new Server(port, fileCacheSize, config == null ? new Config() : config, fileGetter, navigate,
+                    verbose);
             thread = new Thread(instance);
             thread.start();
             while (!instance.serverStarted.get()) ; // should be a really short wait
@@ -347,7 +345,7 @@ public class Server implements Runnable {
 
     public static Server getInstance(@Nullable Config config, @Nullable Function<ClassLocation, String> fileGetter,
                                      @Nullable Consumer<NavigationDestination> navigate) {
-        return getInstance(-1, config, fileGetter, navigate);
+        return getInstance(-1, -1, config, fileGetter, navigate, false);
     }
 
     /**
@@ -358,5 +356,16 @@ public class Server implements Runnable {
                                                              @Nullable Function<ClassLocation, String> fileGetter,
                                                              @Nullable Consumer<NavigationDestination> navigate) {
         return getInstance(config, fileGetter, navigate).getFirefoxProfilerURLAndRegister(file);
+    }
+
+    /**
+     * Supports .json.gz and .jfr files
+     */
+    public static synchronized String startIfNeededAndGetUrl(int port, Path file,
+                                                             @Nullable Config config,
+                                                             @Nullable Function<ClassLocation, String> fileGetter,
+                                                             @Nullable Consumer<NavigationDestination> navigate,
+                                                             boolean verbose) {
+        return getInstance(port, -1, config, fileGetter, navigate, verbose).getFirefoxProfilerURLAndRegister(file);
     }
 }
