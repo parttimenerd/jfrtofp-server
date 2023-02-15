@@ -46,4 +46,9 @@ repositories {
 ```
 
 ## License
-MIT
+MIT, Copyright 2023 SAP SE or an SAP affiliate company, Johannes Bechberger
+and jfrtofp-server contributors
+
+
+*This project is a prototype of the [SapMachine](https://sapmachine.io) team
+at [SAPSE](https://sap.com)*
