@@ -1,5 +1,5 @@
 # jfrtofp-server
-[![Maven Package](https://jitpack.io/v/parttimenerd/jfrtofp-server.svg)](https://jitpack.io/#parttimenerd/jfrtofp-server)
+![Sonatype Nexus (Snapshots)](https://img.shields.io/nexus/s/me.bechberger/jfrtofp-server?server=https%3A%2F%2Fs01.oss.sonatype.org)
 [![Build](https://github.com/parttimenerd/jfrtofp-server/actions/workflows/push.yml/badge.svg)](https://github.com/parttimenerd/jfrtofp-server/actions/workflows/push.yml)
 
 Bundle of the [JFR to FirefoxProfiler converter](https://github.com/parttimenerd/jfrtofp-server) 
@@ -51,4 +51,4 @@ and jfrtofp-server contributors
 
 
 *This project is a prototype of the [SapMachine](https://sapmachine.io) team
-at [SAPSE](https://sap.com)*
+at [SAP SE](https://sap.com)*
