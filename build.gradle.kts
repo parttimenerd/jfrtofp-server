@@ -68,7 +68,7 @@ dependencies {
     implementation("io.javalin:javalin:4.6.7")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.13.0")
     implementation("org.slf4j:slf4j-simple:2.0.5")
-    implementation("me.bechberger:jfrtofp:0.0.2-SNAPSHOT") {
+    implementation("me.bechberger:jfrtofp:0.0.3-SNAPSHOT") {
         this.isChanging = true
     }
 }
