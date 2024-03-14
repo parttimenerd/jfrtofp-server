@@ -25,8 +25,8 @@ repositories {
 
 plugins {
     // Apply the org.jetbrains.kotlin.jvm Plugin to add support for Kotlin.
-    id("org.jetbrains.kotlin.jvm") version "1.7.10"
-    kotlin("plugin.serialization") version "1.7.10"
+    id("org.jetbrains.kotlin.jvm") version "1.9.22"
+    kotlin("plugin.serialization") version "1.9.22"
 
     id("com.github.johnrengelman.shadow") version "7.1.2"
 
@@ -58,17 +58,17 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 
     // This dependency is used by the application.
-    implementation("org.junit.jupiter:junit-jupiter:5.9.0")
+    implementation("org.junit.jupiter:junit-jupiter:5.10.1")
 
     // Use the Kotlin JUnit integration.
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.4.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.0")
-    implementation("info.picocli:picocli:4.7.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
+    implementation("info.picocli:picocli:4.7.5")
     implementation("io.javalin:javalin:4.6.7")
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.13.0")
-    implementation("org.slf4j:slf4j-simple:2.0.5")
-    implementation("me.bechberger:jfrtofp:0.0.3-SNAPSHOT") {
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.16.1")
+    implementation("org.slf4j:slf4j-simple:2.0.9")
+    implementation("me.bechberger:jfrtofp:0.0.4-SNAPSHOT") {
         this.isChanging = true
     }
 }

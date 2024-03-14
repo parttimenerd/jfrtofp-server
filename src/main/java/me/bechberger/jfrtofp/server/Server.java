@@ -11,6 +11,7 @@ import kotlin.Pair;
 import me.bechberger.jfrtofp.FileCache;
 import me.bechberger.jfrtofp.processor.Config;
 import org.eclipse.jetty.util.log.Log;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -177,7 +178,7 @@ public class Server implements Runnable {
                     var config = jfrFile.config != null ? jfrFile.config : this.config;
                     modfiyConfig(config);
                     LOG.info("Processing " + jfrFile.file.toFile());
-                    ctx.result(Files.newInputStream(fileCache.get(jfrFile.file, config)));
+                    ctx.result(Files.newInputStream(getPath(jfrFile, config)));
                 } else {
                     ctx.result(Files.newInputStream(requestedFile.file));
                 }
@@ -221,6 +222,25 @@ public class Server implements Runnable {
                 Objects.requireNonNull(app.jettyServer()).server().join();
             } catch (Exception ignored) {
             }
+        }
+    }
+
+    @NotNull
+    private Path getPath(JFRFileInfo jfrFile, Config config) {
+        try {
+            return fileCache.get(jfrFile.file, config);
+        } catch (Throwable e) {
+            var errorFile = jfrFile.file.getParent().resolve("err_" + jfrFile.file.getFileName());
+            var errorMessageFile = errorFile.resolveSibling(errorFile.getFileName() + ".txt");
+            Log.getRootLogger().warn("Error processing " + jfrFile.file, e);
+            try {
+                Files.copy(jfrFile.file, errorFile);
+                Files.writeString(errorMessageFile, e.getMessage() + "\n" +
+                        Arrays.stream(e.getStackTrace()).map(StackTraceElement::toString)
+                                .collect(Collectors.joining("\n")));
+            } catch (IOException ignored) {
+            }
+            throw new RuntimeException(e);
         }
     }
 
