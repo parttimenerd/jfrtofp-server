@@ -1,5 +1,6 @@
 package me.bechberger.jfrtofp.server;
 
+import me.bechberger.jfrtofp.processor.Config;
 import me.bechberger.jfrtofp.processor.ConfigMixin;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -27,7 +28,8 @@ public class Main implements Runnable {
 
     @Override
     public void run() {
-        var config = ConfigMixin.Companion.parseConfig(this.config);
+        var config = this.config.isBlank() ? ConfigMixin.Companion.parseConfig(new String[]{}) :
+                ConfigMixin.Companion.parseConfig(this.config);
         if (this.port == 0) {
             port = Server.findPort();
         }

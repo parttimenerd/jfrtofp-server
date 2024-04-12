@@ -173,14 +173,18 @@ public class Server implements Runnable {
                     ctx.redirect("https://http.cat/404");
                     return;
                 }
-                if (requestedFile instanceof JFRFileInfo) {
-                    var jfrFile = (JFRFileInfo) requestedFile;
-                    var config = jfrFile.config != null ? jfrFile.config : this.config;
-                    modfiyConfig(config);
-                    LOG.info("Processing " + jfrFile.file.toFile());
-                    ctx.result(Files.newInputStream(getPath(jfrFile, config)));
-                } else {
-                    ctx.result(Files.newInputStream(requestedFile.file));
+                try {
+                    if (requestedFile instanceof JFRFileInfo) {
+                        var jfrFile = (JFRFileInfo) requestedFile;
+                        var config = jfrFile.config != null ? jfrFile.config : this.config;
+                        modfiyConfig(config);
+                        LOG.info("Processing " + jfrFile.file.toFile());
+                        ctx.result(Files.newInputStream(getPath(jfrFile, config)));
+                    } else {
+                        ctx.result(Files.newInputStream(requestedFile.file));
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
                 ctx.res.setHeader(Header.CONTENT_TYPE, "application/json");
                 ctx.res.setHeader(Header.CONTENT_ENCODING, "gzip");
@@ -235,7 +239,7 @@ public class Server implements Runnable {
         try {
             return fileCache.get(jfrFile.file, config);
         } catch (Throwable e) {
-            var errorFile = jfrFile.file.getParent().resolve("err_" + jfrFile.file.getFileName());
+            var errorFile = jfrFile.file.toAbsolutePath().getParent().resolve("err_" + jfrFile.file.getFileName());
             var errorMessageFile = errorFile.resolveSibling(errorFile.getFileName() + ".txt");
             Log.getRootLogger().warn("Error processing " + jfrFile.file, e);
             try {
