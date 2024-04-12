@@ -222,6 +222,11 @@ public class Server implements Runnable {
                 Objects.requireNonNull(app.jettyServer()).server().join();
             } catch (Exception ignored) {
             }
+            try {
+                Thread.sleep(Long.MAX_VALUE);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
