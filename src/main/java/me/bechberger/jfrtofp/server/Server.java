@@ -16,6 +16,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -166,7 +167,7 @@ public class Server implements Runnable {
             app.before(ctx -> ctx.res.setHeader(Header.ACCESS_CONTROL_ALLOW_ORIGIN, "localhost:$serverPort " +
                     "localhost:$restPort"));
             app.get("/files/{name}.json.gz", ctx -> {
-                var name = ctx.pathParam("name");
+                var name = URLDecoder.decode(ctx.pathParam("name"), Charset.defaultCharset());
                 var requestedFile = registeredFiles.getOrDefault(name,
                         new JSONGZFileInfo(Path.of(name + ".json.gz")));
                 if (Files.notExists(requestedFile.file)) {
@@ -264,7 +265,8 @@ public class Server implements Runnable {
     }
 
     String getJSONURL(String name) {
-        return String.format("http://localhost:%d/files/%s.json.gz", getPort(), name);
+        return String.format("http://localhost:%d/files/%s.json.gz", getPort(),
+                URLEncoder.encode(name, Charset.defaultCharset()));
     }
 
     String getFirefoxProfilerURL(String name) {

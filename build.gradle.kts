@@ -34,7 +34,7 @@ plugins {
 
     id("java-library")
     id("signing")
-    id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
+    id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
 
     // Apply the application plugin to add support for building a CLI application in Java.
     application
@@ -125,8 +125,8 @@ publishing {
             name = "Sonatype"
             url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
             credentials {
-                username = properties("sonatypeUsername")
-                password = properties("sonatypePassword")
+                username = properties("sonatypeTokenUsername")
+                password = properties("sonatypeToken")
             }
         }
     }
