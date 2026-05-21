@@ -164,8 +164,6 @@ public class Server implements Runnable {
             config.enableCorsForAllOrigins();
             config.addSinglePageRoot("/", "/fp/index.html");
         })) {
-            app.before(ctx -> ctx.res.setHeader(Header.ACCESS_CONTROL_ALLOW_ORIGIN, "localhost:$serverPort " +
-                    "localhost:$restPort"));
             app.get("/files/{name}.json.gz", ctx -> {
                 var name = URLDecoder.decode(ctx.pathParam("name"), Charset.defaultCharset());
                 var requestedFile = registeredFiles.getOrDefault(name,

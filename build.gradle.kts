@@ -16,8 +16,9 @@ configurations.all {
 }
 
 repositories {
+    mavenLocal()
     maven {
-        url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+        url = uri("https://central.sonatype.com/repository/maven-snapshots/")
     }
     mavenCentral()
     gradlePluginPortal()
@@ -123,7 +124,7 @@ publishing {
     repositories {
         maven {
             name = "Sonatype"
-            url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+            url = uri("https://central.sonatype.com/repository/maven-snapshots/")
             credentials {
                 username = properties("sonatypeTokenUsername")
                 password = properties("sonatypeToken")

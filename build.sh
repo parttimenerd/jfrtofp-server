@@ -20,7 +20,7 @@ echo "Install dependencies of firefox-profiler if needed"
 echo "Build the profiler"
 (
   cd firefox-profiler
-  yarn build
+  yarn build-prod
 )
 echo "Copy the profiler to the src/main/resources/fp folder"
 rm -rf src/main/resources/fp

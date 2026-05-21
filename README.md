@@ -35,12 +35,12 @@ Requires NodeJS (see Firefox Profiler build instructions) to be installed.
 ## Usage as a Library
 ```groovy
 dependencies {
-    implementation 'com.github.parttimenerd:jfrtofp-server:main-SNAPSHOT'
+    implementation 'com.github.parttimenerd:jfrtofp-server:0.0.3-SNAPSHOT'
 }
 
 repositories {
     maven {
-        url = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+        url = "https://central.sonatype.com/repository/maven-snapshots/"
     }
 }
 ```
