@@ -10,7 +10,7 @@ for IntelliJ IDEA.
 
 *This is in alpha state, it does not work with really large JFR files and might still have bugs.*
 
-It actually uses the custom [Firefox Profiler fork](https://github.com/parttimenerd/firefox-profiler/tree/merged)
+It actually uses the custom [Firefox Profiler fork](https://github.com/parttimenerd/firefox-profiler/tree/jfrtofp)
 which includes many of our own PRs which are not yet upstream (and might be less stable).
 
 ## Basic Usage
