@@ -13,6 +13,21 @@ for IntelliJ IDEA.
 It actually uses the custom [Firefox Profiler fork](https://github.com/parttimenerd/firefox-profiler/tree/jfrtofp)
 which includes many of our own PRs which are not yet upstream (and might be less stable).
 
+## Web-based alternative (no server, no JVM)
+
+For one-off viewing, the [hosted Firefox Profiler fork](https://parttimenerd.github.io/firefox-profiler/)
+now includes an in-browser JFR converter — drag and drop a `.jfr` file into the
+page and view it directly, no local server or JDK needed. The conversion runs
+locally in WebAssembly (built on [Jaroslav Bachorik](https://github.com/jbachorik)'s
+[jafar](https://github.com/btraceio/jafar) parser, compiled via
+[GraalVM Web Image](https://www.graalvm.org/latest/reference-manual/web-image/));
+the file never leaves your machine.
+
+`jfrtofp-server` is still the right choice when you want IDE integration
+(see [intellij-profiler-plugin](https://github.com/parttimenerd/intellij-profiler-plugin)),
+batch processing, or recordings large enough that the in-browser converter
+becomes slow.
+
 ## Basic Usage
 Download the latest `jfrtofp-server-all.jar` release and simply pass the JFR file as its first argument:
 
