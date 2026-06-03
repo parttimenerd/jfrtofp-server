@@ -35,7 +35,7 @@ plugins {
 
     id("java-library")
     id("signing")
-    id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
+    id("com.gradleup.nmcp") version "0.1.5"
 
     // Apply the application plugin to add support for building a CLI application in Java.
     application
@@ -69,7 +69,7 @@ dependencies {
     implementation("io.javalin:javalin:4.6.7")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.16.1")
     implementation("org.slf4j:slf4j-simple:2.0.9")
-    implementation("me.bechberger:jfrtofp:0.0.6-SNAPSHOT") {
+    implementation("me.bechberger:jfrtofp:0.0.6") {
         this.isChanging = true
     }
 }
@@ -121,15 +121,13 @@ publishing {
             }
         }
     }
-    repositories {
-        maven {
-            name = "Sonatype"
-            url = uri("https://central.sonatype.com/repository/maven-snapshots/")
-            credentials {
-                username = properties("sonatypeTokenUsername")
-                password = properties("sonatypeToken")
-            }
-        }
+}
+
+nmcp {
+    centralPortal {
+        username = properties("sonatypeTokenUsername")
+        password = properties("sonatypeToken")
+        publishingType = "AUTOMATIC"
     }
 }
 
