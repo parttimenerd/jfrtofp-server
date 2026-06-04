@@ -69,7 +69,7 @@ dependencies {
     implementation("io.javalin:javalin:4.6.7")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.16.1")
     implementation("org.slf4j:slf4j-simple:2.0.9")
-    implementation("me.bechberger:jfrtofp:0.0.6") {
+    implementation("me.bechberger:jfrtofp:0.0.7") {
         this.isChanging = true
     }
 }
@@ -132,5 +132,9 @@ nmcp {
 }
 
 signing {
-    //sign(publishing.publications["mavenJava"])
+    useInMemoryPgpKeys(
+        providers.gradleProperty("signingInMemoryKey").orNull,
+        providers.gradleProperty("signingInMemoryKeyPassword").orNull,
+    )
+    sign(publishing.publications["mavenJava"])
 }
