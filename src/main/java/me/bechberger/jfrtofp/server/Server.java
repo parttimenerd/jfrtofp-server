@@ -267,8 +267,12 @@ public class Server implements Runnable {
                 URLEncoder.encode(name, Charset.defaultCharset()));
     }
 
+    private static final String FIREFOX_PROFILER_BASE_URL =
+            System.getProperty("firefox.profiler.base.url",
+                    "https://parttimenerd.github.io/firefox-profiler");
+
     String getFirefoxProfilerURL(String name) {
-        return String.format("http://localhost:%d/from-url/%s", getPort(),
+        return String.format("%s/from-url/%s/", FIREFOX_PROFILER_BASE_URL,
                 URLEncoder.encode(getJSONURL(name), Charset.defaultCharset()));
     }
 
