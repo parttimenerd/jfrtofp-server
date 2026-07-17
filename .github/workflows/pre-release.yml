@@ -10,6 +10,9 @@ jobs:
   pre-release:
     name: "Pre Release"
     runs-on: "ubuntu-latest"
+    permissions:
+      contents: write
+      packages: write
 
     steps:
       - uses: actions/checkout@v1
@@ -29,6 +32,11 @@ jobs:
         run: chmod +x build.sh
       - name: Build the project
         run: ./build.sh
+      - name: Publish to GitHub Packages
+        run: ./gradlew publishMavenJavaPublicationToGitHubPackagesRepository
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
