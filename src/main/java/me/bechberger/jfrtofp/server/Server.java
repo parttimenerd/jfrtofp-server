@@ -3,14 +3,13 @@ package me.bechberger.jfrtofp.server;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.Javalin;
-import io.javalin.core.util.Header;
-import io.javalin.core.util.JavalinException;
-import io.javalin.core.util.JavalinLogger;
+import io.javalin.http.Header;
 import io.javalin.http.staticfiles.Location;
+import io.javalin.util.JavalinException;
+import io.javalin.util.JavalinLogger;
 import kotlin.Pair;
 import me.bechberger.jfrtofp.FileCache;
 import me.bechberger.jfrtofp.processor.Config;
-import org.eclipse.jetty.util.log.Log;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,7 +23,6 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -145,26 +143,31 @@ public class Server implements Runnable {
     }
 
     private void startServer() {
-        Log.getProperties().setProperty("org.eclipse.jetty.util.log.announce", "false");
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (fileCache != null) {
                 fileCache.close();
             }
         }));
-        // see https://github.com/javalin/javalin/issues/358#issuecomment-420982615
         var classLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(Javalin.class.getClassLoader());
-        try (var app = Javalin.create(config -> {
+        modfiyConfig(config);
+        var app = Javalin.create(config -> {
+            config.jetty.port = port;
             var fpResourceFolder = Path.of("src/main/resources/fp");
             if (Files.exists(fpResourceFolder)) {
-                config.addStaticFiles(fpResourceFolder.toAbsolutePath().toString(), Location.EXTERNAL);
+                config.staticFiles.add(staticFiles -> {
+                    staticFiles.directory = fpResourceFolder.toAbsolutePath().toString();
+                    staticFiles.location = Location.EXTERNAL;
+                });
             } else {
-                config.addStaticFiles("/fp", Location.CLASSPATH);
+                config.staticFiles.add(staticFiles -> {
+                    staticFiles.directory = "/fp";
+                    staticFiles.location = Location.CLASSPATH;
+                });
             }
-            config.enableCorsForAllOrigins();
-            config.addSinglePageRoot("/", "/fp/index.html");
-        })) {
-            app.get("/files/{name}.json.gz", ctx -> {
+            config.bundledPlugins.enableCors(cors -> cors.addRule(it -> it.anyHost()));
+            config.spaRoot.addFile("/", "/fp/index.html");
+            config.routes.get("/files/{name}.json.gz", ctx -> {
                 var name = URLDecoder.decode(ctx.pathParam("name"), Charset.defaultCharset());
                 var requestedFile = registeredFiles.getOrDefault(name,
                         new JSONGZFileInfo(Path.of(name + ".json.gz")));
@@ -175,23 +178,22 @@ public class Server implements Runnable {
                 try {
                     if (requestedFile instanceof JFRFileInfo) {
                         var jfrFile = (JFRFileInfo) requestedFile;
-                        var config = jfrFile.config != null ? jfrFile.config : this.config;
-                        modfiyConfig(config);
+                        var cfg = jfrFile.config != null ? jfrFile.config : this.config;
+                        modfiyConfig(cfg);
                         LOG.info("Processing " + jfrFile.file.toFile());
-                        ctx.result(Files.newInputStream(getPath(jfrFile, config)));
+                        ctx.result(Files.newInputStream(getPath(jfrFile, cfg)));
                     } else {
                         ctx.result(Files.newInputStream(requestedFile.file));
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                ctx.res.setHeader(Header.CONTENT_TYPE, "application/json");
-                ctx.res.setHeader(Header.CONTENT_ENCODING, "gzip");
-                ctx.res.setHeader(Header.ACCESS_CONTROL_ALLOW_ORIGIN, "*");
+                ctx.res().setHeader(Header.CONTENT_TYPE, "application/json");
+                ctx.res().setHeader(Header.CONTENT_ENCODING, "gzip");
+                ctx.res().setHeader(Header.ACCESS_CONTROL_ALLOW_ORIGIN, "*");
             });
-            modfiyConfig(config);
             if (navigate != null) {
-                app.post("/ide/*", ctx -> {
+                config.routes.post("/ide/*", ctx -> {
                     var pkgAndClass = splitPathIntoPkgAndClass("/ide/", ctx.path());
                     ObjectMapper objectMapper = new ObjectMapper();
                     JsonNode jsonNode = objectMapper.readTree(ctx.body());
@@ -203,7 +205,7 @@ public class Server implements Runnable {
                 });
             }
             if (fileGetter != null) {
-                app.get("/ide/*", ctx -> {
+                config.routes.get("/ide/*", ctx -> {
                     var pkgAndClass = splitPathIntoPkgAndClass("/ide/", ctx.path());
                     var destination = new ClassLocation(pkgAndClass.getFirst(), pkgAndClass.getSecond());
                     LOG.info("Getting file " + destination);
@@ -211,25 +213,21 @@ public class Server implements Runnable {
                     ctx.result(result);
                 });
             }
-            app.get("/show/{name}", ctx -> {
+            config.routes.get("/show/{name}", ctx -> {
                 var targetUrl = getFirefoxProfilerURL(ctx.pathParam("name"));
-                System.out.printf("Redirecting to " + targetUrl + "\n");
+                System.out.println("Redirecting to " + targetUrl);
                 ctx.redirect(targetUrl);
             });
-            app.start(port);
-            this.app = app;
-            port = app.port();
-            serverStarted.set(true);
-            Thread.currentThread().setContextClassLoader(classLoader);
-            try {
-                Objects.requireNonNull(app.jettyServer()).server().join();
-            } catch (Exception ignored) {
-            }
-            try {
-                Thread.sleep(Long.MAX_VALUE);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+        });
+        app.start();
+        this.app = app;
+        port = app.port();
+        serverStarted.set(true);
+        Thread.currentThread().setContextClassLoader(classLoader);
+        try {
+            Thread.sleep(Long.MAX_VALUE);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -240,7 +238,7 @@ public class Server implements Runnable {
         } catch (Throwable e) {
             var errorFile = jfrFile.file.toAbsolutePath().getParent().resolve("err_" + jfrFile.file.getFileName());
             var errorMessageFile = errorFile.resolveSibling(errorFile.getFileName() + ".txt");
-            Log.getRootLogger().warn("Error processing " + jfrFile.file, e);
+            LOG.warning("Error processing " + jfrFile.file + ": " + e.getMessage());
             try {
                 Files.copy(jfrFile.file, errorFile);
                 Files.writeString(errorMessageFile, e.getMessage() + "\n" +

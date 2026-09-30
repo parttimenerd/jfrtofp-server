@@ -47,7 +47,7 @@ java {
     withJavadocJar()
     withSourcesJar()
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(11))
+        languageVersion.set(JavaLanguageVersion.of(21))
     }
 }
 
@@ -66,7 +66,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.2")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
     implementation("info.picocli:picocli:4.7.5")
-    implementation("io.javalin:javalin:4.6.7")
+    implementation("io.javalin:javalin:7.2.3")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.16.1")
     implementation("org.slf4j:slf4j-simple:2.0.9")
     implementation("me.bechberger:jfrtofp:0.0.7") {
