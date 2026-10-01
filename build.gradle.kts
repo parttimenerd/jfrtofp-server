@@ -26,7 +26,7 @@ repositories {
         url = uri("https://maven.pkg.github.com/parttimenerd/jfrtofp")
         credentials {
             username = System.getenv("GITHUB_ACTOR") ?: properties("gpr.user")
-            password = System.getenv("GITHUB_TOKEN") ?: properties("gpr.token")
+            password = System.getenv("GPR_TOKEN") ?: System.getenv("GITHUB_TOKEN") ?: properties("gpr.token")
         }
     }
 }

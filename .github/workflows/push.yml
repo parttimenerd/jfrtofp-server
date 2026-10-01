@@ -5,24 +5,24 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      GITHUB_ACTOR: ${{ github.actor }}
+      GPR_TOKEN: ${{ secrets.GPR_TOKEN }}
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
         with:
           submodules: true
       - name: Setup Java JDK
-        uses: actions/setup-java@v2.1.0
+        uses: actions/setup-java@v5
         with:
-          distribution: 'adopt'
-          java-version: '17'
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+          distribution: temurin
+          java-version: 21
+          cache: gradle
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-      - name: Grant execute permission for build.sh
-        run: chmod +x build.sh
+      - name: Grant execute permission for gradlew and build.sh
+        run: chmod +x gradlew build.sh
       - name: Build the project
         run: ./build.sh
       - name: test
