@@ -53,16 +53,16 @@ java {
 
 dependencies {
     // Align versions of all Kotlin components
-    implementation(platform("org.jetbrains.kotlin:kotlin-bom"))
+    implementation(platform("org.jetbrains.kotlin:kotlin-bom:2.4.20"))
 
     // Use the Kotlin JDK 8 standard library.
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.4.20")
 
     // This dependency is used by the application.
     implementation("org.junit.jupiter:junit-jupiter:5.12.2")
 
     // Use the Kotlin JUnit integration.
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:2.4.20")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
