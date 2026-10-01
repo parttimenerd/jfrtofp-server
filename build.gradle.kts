@@ -2,7 +2,7 @@
 group = "me.bechberger"
 description = "Bundle of jfrtofp converter with a custom Firefox Profiler"
 
-inner class ProjectInfo {
+class ProjectInfo {
     val longName = "Bundle of the JFR to FirefoxProfiler converter with a custom Firefox Profiler"
     val website = "https://github.com/parttimenerd/jfrtofp-server"
     val scm = "git@github.com:parttimenerd/$name.git"
@@ -26,10 +26,10 @@ repositories {
 
 plugins {
     // Apply the org.jetbrains.kotlin.jvm Plugin to add support for Kotlin.
-    id("org.jetbrains.kotlin.jvm") version "1.9.22"
-    kotlin("plugin.serialization") version "1.9.22"
+    id("org.jetbrains.kotlin.jvm") version "2.4.20"
+    kotlin("plugin.serialization") version "2.4.20"
 
-    id("com.github.johnrengelman.shadow") version "7.1.2"
+    id("com.gradleup.shadow") version "8.3.11"
 
     id("maven-publish")
 
@@ -41,7 +41,7 @@ plugins {
     application
 }
 
-apply { plugin("com.github.johnrengelman.shadow") }
+apply { plugin("com.gradleup.shadow") }
 
 java {
     withJavadocJar()
@@ -59,17 +59,18 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 
     // This dependency is used by the application.
-    implementation("org.junit.jupiter:junit-jupiter:5.10.1")
+    implementation("org.junit.jupiter:junit-jupiter:5.12.2")
 
     // Use the Kotlin JUnit integration.
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.2")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
-    implementation("info.picocli:picocli:4.7.5")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+    implementation("info.picocli:picocli:4.7.7")
     implementation("io.javalin:javalin:7.2.3")
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.16.1")
-    implementation("org.slf4j:slf4j-simple:2.0.9")
-    implementation("me.bechberger:jfrtofp:0.0.7") {
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.19.0")
+    implementation("org.slf4j:slf4j-simple:2.0.17")
+    implementation("me.bechberger:jfrtofp:0.0.9") {
         this.isChanging = true
     }
 }
