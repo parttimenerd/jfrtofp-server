@@ -7,7 +7,7 @@ import io.javalin.http.Header;
 import io.javalin.http.staticfiles.Location;
 import io.javalin.util.JavalinException;
 import io.javalin.util.JavalinLogger;
-import kotlin.Pair;
+import java.util.AbstractMap;
 import me.bechberger.jfrtofp.FileCache;
 import me.bechberger.jfrtofp.processor.Config;
 import org.jetbrains.annotations.NotNull;
@@ -74,7 +74,7 @@ public class Server implements Runnable {
     private final AtomicBoolean serverStarted = new AtomicBoolean(false);
 
     private final Map<String, FileInfo> registeredFiles = new HashMap<>();
-    private final Map<Path, Pair<String, FileInfo>> fileToId = new HashMap<>();
+    private final Map<Path, AbstractMap.SimpleEntry<String, FileInfo>> fileToId = new HashMap<>();
     private final FileCache fileCache;
     private Config config;
 
@@ -134,12 +134,12 @@ public class Server implements Runnable {
         }
     }
 
-    private static Pair<String, String> splitPathIntoPkgAndClass(String matchedPath, String path) {
+    private static AbstractMap.SimpleEntry<String, String> splitPathIntoPkgAndClass(String matchedPath, String path) {
         var fullyQualified = path.substring(matchedPath.length());
         var parts = Arrays.asList(fullyQualified.split("[.]"));
         var pkg = parts.stream().limit(parts.size() - 2).collect(Collectors.joining("."));
         var klass = parts.get(parts.size() - 2);
-        return new Pair<>(pkg, klass);
+        return new AbstractMap.SimpleEntry<>(pkg, klass);
     }
 
     private void startServer() {
@@ -197,7 +197,7 @@ public class Server implements Runnable {
                     var pkgAndClass = splitPathIntoPkgAndClass("/ide/", ctx.path());
                     ObjectMapper objectMapper = new ObjectMapper();
                     JsonNode jsonNode = objectMapper.readTree(ctx.body());
-                    var destination = new NavigationDestination(pkgAndClass.getFirst(), pkgAndClass.getSecond(),
+                    var destination = new NavigationDestination(pkgAndClass.getKey(), pkgAndClass.getValue(),
                             jsonNode.get("method").asText().split("[.]", 2)[1], jsonNode.get("line").asInt(-1));
                     LOG.info("Navigating to " + destination);
                     navigate.accept(destination);
@@ -207,7 +207,7 @@ public class Server implements Runnable {
             if (fileGetter != null) {
                 config.routes.get("/ide/*", ctx -> {
                     var pkgAndClass = splitPathIntoPkgAndClass("/ide/", ctx.path());
-                    var destination = new ClassLocation(pkgAndClass.getFirst(), pkgAndClass.getSecond());
+                    var destination = new ClassLocation(pkgAndClass.getKey(), pkgAndClass.getValue());
                     LOG.info("Getting file " + destination);
                     var result = fileGetter.apply(destination);
                     ctx.result(result);
@@ -276,7 +276,7 @@ public class Server implements Runnable {
     }
 
     /**
-     * Supports .json.gz and .jfr files
+     * Supports .json.gz, .jfr, and .cjfr files
      */
     public String getFirefoxProfilerURLAndRegister(Path file) {
         return getFirefoxProfilerURL(registerFile(file, null));
@@ -305,8 +305,8 @@ public class Server implements Runnable {
                         @Nullable Config config) {
         if (fileToId.containsKey(file)) {
             var p = fileToId.get(file);
-            var id = p.getFirst();
-            var info = p.getSecond();
+            var id = p.getKey();
+            var info = p.getValue();
             if (info instanceof JFRFileInfo) {
                 ((JFRFileInfo) info).config = config;
             }
@@ -317,11 +317,14 @@ public class Server implements Runnable {
         if (name.endsWith(".jfr")) {
             name = name.substring(0, name.length() - 4);
             end = ".jfr";
+        } else if (name.endsWith(".cjfr")) {
+            name = name.substring(0, name.length() - 5);
+            end = ".cjfr";
         } else if (name.endsWith(".json.gz")) {
             name = name.substring(0, name.length() - 8);
             end = ".json.gz";
         } else {
-            throw new IllegalArgumentException("File must end with .jfr or .json.gz");
+            throw new IllegalArgumentException("File must end with .jfr, .cjfr, or .json.gz");
         }
         var i = 0;
         var newName = name;
@@ -329,12 +332,12 @@ public class Server implements Runnable {
             newName = name + "_" + i;
             i++;
         }
-        if (end.equals(".jfr")) {
+        if (end.equals(".jfr") || end.equals(".cjfr")) {
             registeredFiles.put(newName, new JFRFileInfo(file, config));
         } else {
             registeredFiles.put(newName, new JSONGZFileInfo(file));
         }
-        fileToId.put(file, new Pair<>(newName, registeredFiles.get(newName)));
+        fileToId.put(file, new AbstractMap.SimpleEntry<>(newName, registeredFiles.get(newName)));
         return newName;
     }
 
@@ -381,7 +384,7 @@ public class Server implements Runnable {
     }
 
     /**
-     * Supports .json.gz and .jfr files
+     * Supports .json.gz, .jfr, and .cjfr files
      */
     public static synchronized String startIfNeededAndGetUrl(Path file,
                                                              @Nullable Config config,

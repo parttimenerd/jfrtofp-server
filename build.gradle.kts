@@ -32,10 +32,7 @@ repositories {
 }
 
 plugins {
-    // Apply the org.jetbrains.kotlin.jvm Plugin to add support for Kotlin.
-    id("org.jetbrains.kotlin.jvm") version "2.4.20"
-    kotlin("plugin.serialization") version "2.4.20"
-
+    id("java")
     id("com.gradleup.shadow") version "8.3.11"
 
     id("maven-publish")
@@ -59,25 +56,14 @@ java {
 }
 
 dependencies {
-    // Align versions of all Kotlin components
-    implementation(platform("org.jetbrains.kotlin:kotlin-bom:2.4.20"))
-
-    // Use the Kotlin JDK 8 standard library.
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.4.20")
-
     // This dependency is used by the application.
     testImplementation("org.junit.jupiter:junit-jupiter:5.12.2")
-
-    // Use the Kotlin JUnit integration.
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:2.4.20")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.9.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     implementation("info.picocli:picocli:4.7.7")
     implementation("io.javalin:javalin:7.2.3")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.19.0")
     implementation("org.slf4j:slf4j-simple:2.0.17")
-    implementation("me.bechberger:jfrtofp:0.0.10") {
+    implementation("me.bechberger:jfrtofp:0.0.12") {
         this.isChanging = true
     }
 }
