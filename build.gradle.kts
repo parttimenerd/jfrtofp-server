@@ -65,6 +65,7 @@ dependencies {
     implementation("org.slf4j:slf4j-simple:2.0.17")
     implementation("me.bechberger:jfrtofp:0.0.15") {
         this.isChanging = true
+        exclude(group = "me.bechberger", module = "condensed-data")
     }
 }
 
